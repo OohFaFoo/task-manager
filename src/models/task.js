@@ -13,4 +13,9 @@ const Task = mongoose.model("Task",
         }
     } )
 
-module.exports = Task
+const TaskFields = Object.keys(Task.schema.obj)
+
+module.exports = {
+    Task,
+    TaskFields
+}
