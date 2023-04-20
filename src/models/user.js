@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
 // create the schema
 const userSchema = new mongoose.Schema( {
@@ -24,9 +25,44 @@ const userSchema = new mongoose.Schema( {
     },
     age:{
         type: Number
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 })
 
+userSchema.virtual("tasks",{
+    ref: "Task",
+    localField: "_id",
+    foreignField: "owner"
+})
+
+userSchema.methods.toJSON= function(){
+    const user = this
+
+    const userObject = user.toObject()
+
+    delete userObject.password
+    delete userObject.tokens
+
+    return userObject
+}
+
+// is an user instance function so has access to "this", therefore can't use an arrow function
+userSchema.methods.generateAuthToken = async function () {
+    const user = this
+    const token = jwt.sign({ _id: user._id.toString() }, 'thisismynewcourse')
+
+    user.tokens = user.tokens.concat({ token })
+    await user.save()
+
+    return token
+}
+
+// class static function - called from the class User
 userSchema.statics.findByCredentials = async (email, password)=>{
     const user = await User.findOne({email})
         if(!user){
