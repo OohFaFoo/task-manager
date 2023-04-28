@@ -1,8 +1,20 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const multer = require("multer")
+const sharp = require('sharp')
 const {User, UserFields} = require('../models/user')
 const auth = require('../middleware/auth')
 
+const upload = multer({
+    // dest: './task-manager/avatars',
+    limits: { fileSize: 1000000},
+    fileFilter(req, file, cb){
+        if(!file.originalname.toLocaleLowerCase().match(/\.(jpg|jpeg|png)$/)){
+            cb(new Error('Please upload a jpg, jpeg or png'))
+        }
+        cb(undefined,true)
+    }
+})
 
 const router = express.Router()
 
@@ -92,16 +104,47 @@ router.patch('/users/me', auth, async(req, res) => {
 
 router.delete('/users/me', auth, async (req, res)=>{
     try{
-        // const user = await User.findByIdAndDelete(req.user._id)
-        // if(!user){
-        //     return res.status(400).send("Unable to delete user with the id given")
-        // }
-        await User.deleteOne(req.user._id)
+        await req.user.deleteOne()// all user tasks are removed by the middleware
         res.send(req.user)
     } catch(e){
         res.status(500).send(e)
     }
+})
 
+router.post('/users/me/avatar', auth, upload.single('avatar'), async(req, res)=>{
+    const buffer = await sharp(req.file.buffer).resize({width:250, height:250}).png().toBuffer()
+    req.user.avatar = buffer;
+    await req.user.save();
+    res.send();
+}, (error,req,res,next)=>{
+    res.status(400).send({error: error.message})
+})
+
+router.delete('/users/me/avatar', auth, async(req,res)=>{
+    try{
+        if(req.user !== undefined){
+            req.user.avatar = undefined;
+            await req.user.save()
+            res.send(req.user)
+        } else {
+            res.status(400).send({error: "invalid user"})
+        }
+    }catch(e){
+        res.status(400).send(e)
+    }
+})
+
+router.get('/users/:id/avatar', async(req, res)=>{
+    try{
+        const user = await User.findById(req.params.id)
+        if(!user || !user.avatar){
+            throw new Error()
+        }
+        res.set('Content-Type', 'image/png')
+        res.send(user.avatar)
+    }catch(e){
+        res.status(404).send()
+    }
 })
 
 module.exports = router
