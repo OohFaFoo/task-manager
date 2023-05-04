@@ -1,0 +1,1 @@
+heroku config:set MONGODB_URL="mongodb+srv://alanstrong:Psoldier01@cluster0.h1b5tqr.mongodb.net" --app=alan-web-app
