@@ -10,8 +10,7 @@ const taskRouter = require('./routers/taskRouter')
 const app = express()
 
 // the port given by the server, if none give default to 3000 
-const port = process.env.PORT | 3000
-
+const port = process.env.PORT
 
 // expect the body of the requests to be in json format
 app.use(express.json())

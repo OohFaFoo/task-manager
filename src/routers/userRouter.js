@@ -4,9 +4,9 @@ const multer = require("multer")
 const sharp = require('sharp')
 const {User, UserFields} = require('../models/user')
 const auth = require('../middleware/auth')
+const mail = require('../emails/account')
 
 const upload = multer({
-    // dest: './task-manager/avatars',
     limits: { fileSize: 1000000},
     fileFilter(req, file, cb){
         if(!file.originalname.toLocaleLowerCase().match(/\.(jpg|jpeg|png)$/)){
@@ -27,7 +27,8 @@ router.post("/users", async (req, res)=>{
     try{
         const user = new User(req.body)
         const token = await user.generateAuthToken()
-        //await user.save()
+        mail.sendWelcomeEmail(user.email, user.name)
+
         res.status(201).send({user, token})
     } catch(e){
         let msg = e
@@ -104,7 +105,10 @@ router.patch('/users/me', auth, async(req, res) => {
 
 router.delete('/users/me', auth, async (req, res)=>{
     try{
+        const email = req.user.email
+        const name = req.user.name
         await req.user.deleteOne()// all user tasks are removed by the middleware
+        mail.sendCancellationEmail(email, name)
         res.send(req.user)
     } catch(e){
         res.status(500).send(e)

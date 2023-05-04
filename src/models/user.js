@@ -61,7 +61,7 @@ userSchema.methods.toJSON= function(){
 // is an user instance function so has access to "this", therefore can't use an arrow function
 userSchema.methods.generateAuthToken = async function () {
     const user = this
-    const token = jwt.sign({ _id: user._id.toString() }, 'thisismynewcourse')
+    const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET)
 
     user.tokens = user.tokens.concat({ token })
     await user.save()
